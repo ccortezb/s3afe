@@ -24,7 +24,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-import optparse, os, sys
+import mimetypes, optparse, os, sys
 
 try:
     from boto.exception import S3ResponseError
@@ -39,6 +39,12 @@ def _get_envar_or_none(name):
     if name in os.environ.keys():
         return os.environ[name]
     return None
+    
+def _guess_mimetype(filename, fallback='application/octet-stream'):
+    mimetype = mimetypes.guess_type(filename)[0]
+    if mimetype:
+        return mimetype
+    return fallback
     
 def _upload(awskey, awssecret, filename, bucketname, keyname, acl):
     """
