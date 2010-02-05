@@ -39,14 +39,79 @@ def _get_envar_or_none(name):
     if name in os.environ.keys():
         return os.environ[name]
     return None
-    
+
 def _guess_mimetype(filename, fallback='application/octet-stream'):
+    """
+    Tries to guess and return the correct mimetype for a filename, consulting
+    the mimetypes module and (if needed) a hard coded dictionary of common
+    mimetypes for audio/video/image.
+    If every lookup fails, it returns the fallback mimetype.
+    """
     mimetype = mimetypes.guess_type(filename)[0]
     if mimetype:
         return mimetype
-    return fallback
+
+    _av_mimetype_dict = {'.ra': 'audio/x-pn-realaudio',
+        '.ecelp9600': 'audio/vnd.nuera.ecelp9600', '.dwg': 'image/vnd.dwg',
+        '.h263': 'video/h263', '.h261': 'video/h261',
+        '.ras': 'image/x-cmu-raster', '.h264': 'video/h264',
+        '.mjp2': 'video/mj2', '.ram': 'audio/x-pn-realaudio',
+        '.lvp': 'audio/vnd.lucent.voice', '.mid': 'audio/midi',
+        '.ecelp7470': 'audio/vnd.nuera.ecelp7470', '.m1v': 'video/mpeg',
+        '.mmr': 'image/vnd.fujixerox.edmics-mmr',
+        '.xwd': 'image/x-xwindowdump','.avi': 'video/x-msvideo',
+        '.bmp': 'image/bmp', '.aif': 'audio/x-aiff',
+        '.fvt': 'video/vnd.fvt', '.wma': 'audio/x-ms-wma',
+        '.wmx': 'video/x-ms-wmx', '.ico': 'image/vnd.microsoft.icon',
+        '.wmv': 'video/x-ms-wmv', '.fst': 'image/vnd.fst',
+        '.wbmp': 'image/vnd.wap.wbmp', '.fbs': 'image/vnd.fastbidsheet',
+        '.jpe': 'image/jpeg', '.djv': 'image/vnd.djvu', '.jpg': 'image/jpeg',
+        '.pct': 'image/x-pict', '.jpm': 'video/jpm', '.pcx': 'image/x-pcx',
+        '.mpga': 'audio/mpeg', '.jpeg': 'image/jpeg',
+        '.mdi': 'image/vnd.ms-modi', '.wav': 'audio/x-wav',
+        '.m3u': 'audio/x-mpegurl', '.jp2': 'image/jp2',
+        '.asx': 'video/x-ms-asf', '.mj2': 'video/mj2',
+        '.asf': 'video/x-ms-asf', '.m3a': 'audio/mpeg',
+        '.ecelp4800': 'audio/vnd.nuera.ecelp4800',
+        '.pntg': 'image/x-macpaint', '.mp4v': 'video/mp4', '.ief': 'image/ief',
+        '.mpg4': 'video/mp4', '.au': 'audio/basic',
+        '.pbm': 'image/x-portable-bitmap', '.mp4a': 'audio/mp4',
+        '.fpx': 'image/vnd.fpx', '.viv': 'video/vnd.vivo',
+        '.kar': 'audio/midi', '.wax': 'audio/x-ms-wax',
+        '.aiff': 'audio/x-aiff', '.aifc': 'audio/x-aiff',
+        '.fli': 'video/x-fli', '.xpm': 'image/x-xpixmap',
+        '.mpeg': 'video/mpeg', '.rmi': 'audio/midi',
+        '.gif': 'image/gif', '.pic': 'image/x-pict', '.djvu': 'image/vnd.djvu',
+        '.ppm': 'image/x-portable-pixmap',
+        '.rmp': 'audio/x-pn-realaudio-plugin', '.mov': 'video/quicktime',
+        '.cgm': 'image/cgm', '.qt': 'video/quicktime', '.mp2a': 'audio/mpeg',
+        '.qti': 'image/x-quicktime', '.m2v': 'video/mpeg',
+        '.npx': 'image/vnd.net-fpx', '.rlc': 'image/vnd.fujixerox.edmics-rlc',
+        '.svgz': 'image/svg+xml', '.m2a': 'audio/mpeg',
+        '.xbm': 'image/x-xbitmap', '.psd': 'image/vnd.adobe.photoshop',
+        '.midi': 'audio/midi', '.tiff': 'image/tiff',
+        '.btif': 'image/prs.btif', '.rgb': 'image/x-rgb',
+        '.3g2': 'video/3gpp2', '.mxu': 'video/vnd.mpegurl',
+        '.xif': 'image/vnd.xiff',
+        '.tif': 'image/tiff', '.mpa': 'video/mpeg', '.mpg': 'video/mpeg',
+        '.mpe': 'video/mpeg', '.pgm': 'image/x-portable-graymap',
+        '.svg': 'image/svg+xml', '.g3': 'image/g3fax', '.cmx': 'image/x-cmx',
+        '.dv': 'video/x-dv', '.dif': 'video/x-dv',
+        '.eol': 'audio/vnd.digital-winds', '.3gp': 'video/3gpp',
+        '.qtif': 'image/x-quicktime', '.wm': 'video/x-ms-wm',
+        '.mac': 'image/x-macpaint', '.movie': 'video/x-sgi-movie',
+        '.png': 'image/png', '.m4a': 'audio/mp4a-latm',
+        '.pnm': 'image/x-portable-anymap', '.jpgm': 'video/jpm',
+        '.snd': 'audio/basic', '.pnt': 'image/x-macpaint',
+        '.m4v': 'video/mp4', '.m4u': 'video/vnd.mpegurl',
+        '.pict': 'image/pict', '.dxf': 'image/vnd.dxf', '.jpgv': 'video/jpeg',
+        '.m4p': 'audio/mp4a-latm', '.mp3': 'audio/mpeg', '.mp2': 'audio/mpeg',
+        '.wvx': 'video/x-ms-wvx', '.mp4': 'video/mp4',
+    }
+    suffix = os.path.splitext(filename.lower())[-1]
+    return _av_mimetype_dict.get(suffix, fallback)
     
-def _upload(awskey, awssecret, filename, bucketname, keyname, acl):
+def _upload(awskey, awssecret, filename, bucketname, keyname, acl, headers={}):
     """
     Uploads a file to S3
     """
@@ -54,7 +119,8 @@ def _upload(awskey, awssecret, filename, bucketname, keyname, acl):
         conn = S3Connection(awskey, awssecret)
         bucket = conn.get_bucket(bucketname)
         key = bucket.new_key(keyname)
-        key.set_contents_from_filename(filename)
+        headers['Content-Type'] = _guess_mimetype(filename)
+        key.set_contents_from_filename(filename, headers)
         key.set_acl(acl)
     except S3ResponseError, exc:
         if exc.status == 403:
